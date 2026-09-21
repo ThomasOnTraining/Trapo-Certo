@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/*
+  Trampo Certo: tokens de identidade visual.
+  Paleta branco e verde, estilo cartaz de feira: sem gradiente,
+  sem sombra difusa. A unica sombra permitida e a sombra solida
+  de recorte de papel usada no modal de contato.
+*/
+@theme {
+  --color-papel: #ffffff;
+  --color-verde-papel: #f4f8f4;
+  --color-verde-trampo: #1e7f4c;
+  --color-verde-trampo-forte: #166539;
+  --color-verde-fundo: #0e3b26;
+  --color-verde-claro: #e3f0e6;
+  --color-amarelo-aviso: #f2b705;
+  --color-tinta: #16211b;
+  --color-cinza-linha: #d9e3db;
+
+  --font-display: var(--font-archivo), "Arial Black", sans-serif;
+  --font-corpo: var(--font-nunito), system-ui, sans-serif;
+
+  --radius-cartao: 10px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-papel);
+  color: var(--color-tinta);
+  font-family: var(--font-corpo);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+/* Tracos e blocos de assinatura visual */
+.regra-tracejada {
+  border-top: 2px dashed var(--color-cinza-linha);
+}
+
+.sombra-papel {
+  /* Unica sombra do sistema: recorte de papel para modais */
+  box-shadow: 4px 4px 0 var(--color-verde-fundo);
+}
+
+.botao-afunda {
+  transition: transform 80ms ease, background-color 80ms ease;
+}
+.botao-afunda:active {
+  transform: translateY(1px);
+}
+
+/* Foco visivel sempre, contraste alto (uso na rua, luz do sol) */
+:focus-visible {
+  outline: 2px solid var(--color-verde-trampo);
+  outline-offset: 2px;
+}
