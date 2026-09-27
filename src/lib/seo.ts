@@ -26,7 +26,9 @@ export function descricaoPrestador(
   total: number,
   verificado: boolean
 ): string {
-  const selo = verificado ? "Verificado (documento conferido)." : "";
+  const selo = verificado
+    ? "Verificado (documento conferido)."
+    : "Ainda não verificado pela equipe.";
   return `${nome}, ${profissao.toLowerCase()} em ${CIDADE.nome}. Nota ${nota} com ${total} avaliações de moradores. ${selo} Contato direto pelo WhatsApp.`;
 }
 

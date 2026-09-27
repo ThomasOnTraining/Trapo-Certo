@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { EsquemaEvento } from "@/lib/validate";
 import { checarLimite, chaveDoChamador } from "@/lib/rate-limit";
+import { supabaseService } from "@/lib/supabase/service";
+import { hashIp, hashSessao } from "@/lib/anon";
 
 export const runtime = "nodejs";
 
 /*
   Recebimento de eventos de metrica. Regras do plano:
   - consent explícito no payload (sem consent = rejeitado, nunca aceito por padrão)
-  - IP usado só para rate limit em memória; nunca persistido em claro
-  - em produção: gravar em `events` com ip_hash (SHA-256 + salt diário)
-    e session_hash; aqui, modo demo apenas valida e responde 204.
+  - IP e sessão viram hash (SHA-256 + salt diário) antes de gravar
+  - sem service_role configurada, segue em modo demo: valida e responde 204
 */
 export async function POST(req: Request) {
   const limite = checarLimite(
@@ -41,6 +42,33 @@ export async function POST(req: Request) {
     return new NextResponse(null, { status: 204 });
   }
 
-  // TODO (produção): INSERT INTO events (..., ip_hash, session_hash)
+  const db = supabaseService();
+  if (!db) return new NextResponse(null, { status: 204 }); // modo demo
+
+  const ipHash = hashIp(req.headers.get("x-forwarded-for"));
+  const sessaoHash = hashSessao(parse.data.sessao);
+
+  try {
+    // consent da sessão: grava uma vez, na primeira aparição
+    const { count } = await db
+      .from("consent")
+      .select("id", { count: "exact", head: true })
+      .eq("session_hash", sessaoHash);
+    if (!count) {
+      await db
+        .from("consent")
+        .insert({ session_hash: sessaoHash, ip_hash: ipHash, metricas: true, anuncios: false });
+    }
+    await db
+      .from("events")
+      .insert({
+        nome: parse.data.nome,
+        props: parse.data.props,
+        session_hash: sessaoHash,
+        ip_hash: ipHash,
+      });
+  } catch {
+    // métrica nunca pode derrubar a rota
+  }
   return new NextResponse(null, { status: 204 });
 }

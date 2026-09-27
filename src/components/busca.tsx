@@ -51,10 +51,17 @@ export function Busca({ inicial = "" }: { inicial?: string }) {
           if (termo.trim()) buscar(termo.trim());
         }}
         role="search"
+        className="relative"
       >
         <label htmlFor="busca" className="sr-only">
           O que você precisa?
         </label>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-verde-trampo"
+        >
+          <Icone nome="busca" tamanho={18} />
+        </span>
         <input
           id="busca"
           type="search"
@@ -66,12 +73,15 @@ export function Busca({ inicial = "" }: { inicial?: string }) {
           onFocus={() => setAberto(true)}
           placeholder="O que você precisa? Ex.: eletricista no Centro"
           autoComplete="off"
-          className="botao-afunda w-full border-2 border-verde-fundo bg-papel px-4 py-3 text-base placeholder:text-tinta/50 focus:bg-verde-papel"
+          className="botao-afunda w-full border-2 border-verde-fundo bg-papel py-3 pl-10 pr-4 text-base placeholder:text-tinta/50 focus:bg-verde-claro"
           style={{ borderRadius: 10 }}
         />
       </form>
       {aberto && sugestoes.length > 0 && (
-        <ul className="absolute inset-x-0 top-full z-30 mt-1 border-2 border-verde-fundo bg-papel shadow-none">
+        <ul
+          className="sombra-papel absolute inset-x-0 top-full z-30 mt-2 overflow-hidden border-2 border-verde-fundo bg-papel"
+          style={{ borderRadius: 10 }}
+        >
           {sugestoes.map((s, i) => (
             <li key={i} className="border-b border-cinza-linha last:border-b-0">
               <button
@@ -80,7 +90,7 @@ export function Busca({ inicial = "" }: { inicial?: string }) {
                   setAberto(false);
                   router.push(s.href);
                 }}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-verde-papel"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-verde-claro"
               >
                 <span>
                   <strong className="text-tinta">{s.texto}</strong>

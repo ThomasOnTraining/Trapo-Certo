@@ -1,6 +1,8 @@
 import { CardPrestador, EtiquetaPatrocinado } from "@/components/card-prestador";
 import { Busca } from "@/components/busca";
-import { CATEGORIAS, PRESTADORES } from "@/lib/demo";
+import { Filtros } from "@/components/filtros";
+import { BAIRROS } from "@/lib/demo";
+import { listarCategorias, listarPrestadores, verificadoPrimeiro } from "@/lib/catalogo";
 import {
   analisarConsulta,
   ordenarResultados,
@@ -14,6 +16,8 @@ import { tituloCategoria } from "@/lib/seo";
   mostra o mais parecido + sugestao de alerta (fase 2).
 */
 
+export const revalidate = 300;
+
 type Params = {
   searchParams: Promise<{
     q?: string;
@@ -24,11 +28,15 @@ type Params = {
 
 export async function generateMetadata({ searchParams }: Params) {
   const { q, categoria, bairro } = await searchParams;
+  const [categorias, prestadores] = await Promise.all([
+    listarCategorias(),
+    listarPrestadores(),
+  ]);
   const cat = categoria
-    ? CATEGORIAS.find((c) => c.slug === categoria)?.nome
+    ? categorias.find((c) => c.slug === categoria)?.nome
     : null;
   if (cat) {
-    const total = PRESTADORES.filter((p) =>
+    const total = prestadores.filter((p) =>
       p.categoriaSlugs.includes(categoria!)
     ).length;
     return {
@@ -41,12 +49,19 @@ export async function generateMetadata({ searchParams }: Params) {
 
 export default async function PaginaBusca({ searchParams }: Params) {
   const { q = "", categoria, bairro } = await searchParams;
+  const [categorias, prestadores] = await Promise.all([
+    listarCategorias(),
+    listarPrestadores(),
+  ]);
 
-  let lista: PrestadorDemo[] = PRESTADORES;
+  let lista: PrestadorDemo[] = prestadores;
   let buscaSemResultado = false;
 
   if (categoria) {
     lista = lista.filter((p) => p.categoriaSlugs.includes(categoria));
+  }
+  if (bairro && BAIRROS.includes(bairro)) {
+    lista = lista.filter((p) => p.bairros.includes(bairro!));
   }
   if (q.trim()) {
     const consulta = analisarConsulta(q, lista.flatMap((p) => p.bairros));
@@ -57,48 +72,36 @@ export default async function PaginaBusca({ searchParams }: Params) {
     buscaSemResultado = lista.length === 0;
   }
 
+  // Verificados primeiro, sempre: relevância manda dentro de cada grupo.
+  lista = verificadoPrimeiro(lista);
+
   const rotulo = q.trim()
     ? `Resultados para "${q.trim()}"`
     : categoria
-      ? (CATEGORIAS.find((c) => c.slug === categoria)?.nome ?? "Profissionais")
+      ? (categorias.find((c) => c.slug === categoria)?.nome ?? "Profissionais")
       : "Todos os profissionais";
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8 pt-3">
       <Busca inicial={q} />
 
-      {categoria && (
-        <nav className="regra-tracejada mt-3 py-2 text-sm">
-          {"Categorias: "}
-          <a href="/busca" className="underline">
-            todas
-          </a>
-          {" · "}
-          {CATEGORIAS.map((c) => (
-            <span key={c.slug}>
-              {c.slug === categoria ? (
-                <strong className="text-verde-trampo">{c.nome}</strong>
-              ) : (
-                <a href={`/busca?categoria=${c.slug}`} className="underline">
-                  {c.nome}
-                </a>
-              )}
-              {" · "}
-            </span>
-          ))}
-        </nav>
-      )}
+      <Filtros q={q} categoria={categoria ?? null} bairro={bairro ?? null} />
 
-      <h1 className="mt-4 border-b-2 border-verde-fundo pb-1 font-display text-xl uppercase text-verde-fundo">
+      <h1 className="risca-forte mt-4 flex flex-wrap items-baseline gap-x-2 pb-2 font-display text-2xl uppercase leading-none text-verde-fundo">
         {rotulo}
-        <span className="ml-2 text-base text-verde-trampo">({lista.length})</span>
+        <span className="carimbo border-verde-trampo bg-verde-claro normal-case text-verde-trampo">
+          {lista.length} encontrados
+        </span>
       </h1>
 
       {buscaSemResultado && (
-        <div className="mt-4 border-2 border-cinza-linha bg-verde-papel p-4" style={{ borderRadius: 10 }}>
-          <p className="font-display uppercase text-verde-fundo">
+        <div
+          className="relative mt-6 border-2 border-dashed border-verde-fundo bg-papel p-4 pt-5"
+          style={{ borderRadius: 10 }}
+        >
+          <span className="carimbo absolute -top-3 left-3 border-verde-trampo bg-verde-claro text-verde-trampo">
             Ninguém daqui ainda
-          </p>
+          </span>
           <p className="mt-1 text-sm">
             Não achamos esse serviço na cidade. Já sabe quem faz bem feito?
             Chame o profissional para aparecer no catálogo,{" "}
@@ -111,7 +114,7 @@ export default async function PaginaBusca({ searchParams }: Params) {
       )}
 
       {lista.length > 0 && (
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {lista.map((p) => (
             <CardPrestador key={p.id} p={p} />
           ))}
@@ -119,7 +122,7 @@ export default async function PaginaBusca({ searchParams }: Params) {
       )}
 
       {/* Banner do fim da lista: posicao de maior receptividade */}
-      <div className="regra-tracejada mt-6 flex items-center justify-between gap-3 pt-4">
+      <div className="regra-tracejada mt-6 flex flex-col items-start gap-2 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <EtiquetaPatrocinado />
         <p className="text-sm text-tinta/70">
           Seu comércio aqui, para toda a cidade.{" "}

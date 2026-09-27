@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { normalizarBusca, EsquemaBusca } from "@/lib/validate";
 import { checarLimite, chaveDoChamador } from "@/lib/rate-limit";
-import {
-  BAIRROS,
-  CATEGORIAS,
-  PRESTADORES,
-} from "@/lib/demo";
+import { BAIRROS } from "@/lib/demo";
+import { listarCategorias, listarPrestadores } from "@/lib/catalogo";
 import { expandir, similaridade } from "@/lib/search";
 
 export const runtime = "nodejs";
@@ -31,6 +28,10 @@ export async function GET(req: Request) {
   }
 
   const q = normalizarBusca(parse.data.q);
+  const [categorias, prestadores] = await Promise.all([
+    listarCategorias(),
+    listarPrestadores(),
+  ]);
   const sugestoes: {
     tipo: "categoria" | "bairro" | "prestador";
     texto: string;
@@ -38,10 +39,10 @@ export async function GET(req: Request) {
     href: string;
   }[] = [];
 
-  for (const c of CATEGORIAS) {
+  for (const c of categorias) {
     const nome = normalizarBusca(c.nome);
     if (nome.includes(q) || similaridade(q, nome) > 0.5) {
-      const total = PRESTADORES.filter((p) => p.categoriaSlugs.includes(c.slug)).length;
+      const total = prestadores.filter((p) => p.categoriaSlugs.includes(c.slug)).length;
       if (total > 0) {
         sugestoes.push({
           tipo: "categoria",
@@ -69,15 +70,15 @@ export async function GET(req: Request) {
   for (const termo of expandir(q)) {
     const t = normalizarBusca(termo);
     if (t === q) continue;
-    for (const c of CATEGORIAS) {
+    for (const c of categorias) {
       const nome = normalizarBusca(c.nome);
       if (nome.includes(t) && !sugestoes.some((s) => s.texto === c.nome)) {
-        const total = PRESTADORES.filter((p) => p.categoriaSlugs.includes(c.slug)).length;
+        const total = prestadores.filter((p) => p.categoriaSlugs.includes(c.slug)).length;
         if (total > 0) {
           sugestoes.push({
             tipo: "categoria",
             texto: c.nome,
-            detalhe: `talvez você queira · ${total} profissionais`,
+            detalhe: `também procura por ${c.nome} (${total} profissionais)`,
             href: `/busca?categoria=${c.slug}`,
           });
         }
@@ -85,7 +86,7 @@ export async function GET(req: Request) {
     }
   }
 
-  for (const p of PRESTADORES) {
+  for (const p of prestadores) {
     const nome = normalizarBusca(p.nome);
     const prof = normalizarBusca(p.profissao);
     if (
@@ -95,7 +96,7 @@ export async function GET(req: Request) {
       sugestoes.push({
         tipo: "prestador",
         texto: p.nome,
-        detalhe: `${p.profissao} · ★${p.notaMedia.toFixed(1)}`,
+        detalhe: `${p.profissao}, nota ${p.notaMedia.toFixed(1)}`,
         href: `/prestador/${p.slug}`,
       });
     }

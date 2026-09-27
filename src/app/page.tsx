@@ -1,20 +1,17 @@
-import Link from "next/link";
 import { Busca } from "@/components/busca";
+import { Filtros } from "@/components/filtros";
 import {
   CardPrestador,
   EtiquetaPatrocinado,
 } from "@/components/card-prestador";
 import { Icone } from "@/components/icones";
+import { CIDADE } from "@/lib/demo";
 import {
-  BAIRROS,
-  CATEGORIAS,
-  CIDADE,
-  PATROCINADO_CIDADE,
-  PRESTADORES,
-} from "@/lib/demo";
+  listarPrestadores,
+  patrocinadoCidade,
+} from "@/lib/catalogo";
 import {
   descricaoHome,
-  jsonLdPrestador,
   tituloHome,
 } from "@/lib/seo";
 
@@ -24,22 +21,44 @@ import {
   ele trabalha.
 */
 
-export const metadata = {
-  title: tituloHome(),
-  description: descricaoHome(PRESTADORES.length, 146),
-};
+export const revalidate = 300;
 
-const totalAvaliacoes = PRESTADORES.reduce(
-  (soma, p) => soma + p.totalAvaliacoes,
-  0
-);
+export async function generateMetadata() {
+  const prestadores = await listarPrestadores();
+  const total = prestadores.reduce((s, p) => s + p.totalAvaliacoes, 0);
+  return {
+    title: tituloHome(),
+    description: descricaoHome(prestadores.length, total),
+  };
+}
 
-export default function Home() {
-  // Ordenacao: verificados primeiro, nota em seguida, disponivel hoje sobe.
-  const lista = [...PRESTADORES].sort((a, b) => {
-    if (a.verificado !== b.verificado) return a.verificado ? -1 : 1;
-    if (a.disponivelHoje !== b.disponivelHoje)
-      return a.disponivelHoje ? -1 : 1;
+export default async function Home() {
+  const [prestadores, patrocinado] = await Promise.all([
+    listarPrestadores(),
+    patrocinadoCidade(),
+  ]);
+  const totalAvaliacoes = prestadores.reduce(
+    (soma, p) => soma + p.totalAvaliacoes,
+    0
+  );
+  const verificados = prestadores.filter((p) => p.verificado).length;
+  const disponiveisHoje = prestadores.filter((p) => p.disponivelHoje).length;
+  const naoVerificados = prestadores.filter((p) => !p.verificado).length;
+
+  // Ordenacao: 
+  // 1. Verificados disponíveis hoje
+  // 2. Verificados não disponíveis hoje (por nota)
+  // 3. Não verificados disponíveis hoje
+  // 4. Não verificados não disponíveis hoje (por nota)
+  const lista = [...prestadores].sort((a, b) => {
+    const aVerif = a.verificado ? 0 : 1;
+    const bVerif = b.verificado ? 0 : 1;
+    if (aVerif !== bVerif) return aVerif - bVerif;
+    
+    const aDisp = a.disponivelHoje ? 0 : 1;
+    const bDisp = b.disponivelHoje ? 0 : 1;
+    if (aDisp !== bDisp) return aDisp - bDisp;
+    
     return b.notaMedia - a.notaMedia;
   });
 
@@ -57,47 +76,40 @@ export default function Home() {
         }}
       />
 
-      <BarraTopo />
+      <Busca />
 
-      {/* Chips de categoria: acesso direto ao que a cidade mais procura */}
-      <nav aria-label="Categorias" className="regra-tracejada mt-3 py-3">
-        <ul className="flex gap-2 overflow-x-auto pb-1">
-          {CATEGORIAS.map((c) => (
-            <li key={c.slug}>
-              <Link
-                href={`/busca?categoria=${c.slug}`}
-                className="botao-afunda flex shrink-0 items-center gap-1.5 border-2 border-verde-fundo bg-papel px-3 py-1.5 text-sm font-semibold text-verde-fundo hover:bg-verde-claro"
-                style={{ borderRadius: 10 }}
-              >
-                <Icone nome={c.icone} tamanho={17} />
-                {c.nome}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* Patrocinado da cidade: 1 card, etiqueta visivel, nunca no meio da lista */}
-      <section aria-label="Patrocinado" className="mt-3">
-        <div className="flex items-center gap-2">
+      {/* Patrocinado: cupom de jornal de bairro, tracejado, etiqueta por cima */}
+      <section aria-label="Patrocinado" className="relative mt-6">
+        <div className="absolute -top-3 left-3 z-10">
           <EtiquetaPatrocinado />
-          <span className="text-xs text-tinta/60">
-            Comércio local que apoia o catálogo
-          </span>
         </div>
         <div
-          className="mt-1 flex items-center justify-between gap-3 border-2 border-amarelo-aviso bg-amarelo-aviso/10 p-3"
+          className="flex flex-col gap-3 border-2 border-dashed border-verde-fundo bg-amarelo-aviso/15 p-3 pt-5 sm:flex-row sm:items-center sm:justify-between"
           style={{ borderRadius: 10 }}
         >
-          <div>
-            <p className="font-display uppercase text-verde-fundo">
-              {PATROCINADO_CIDADE.nome}
-            </p>
-            <p className="text-sm">{PATROCINADO_CIDADE.descricao}</p>
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span
+              aria-hidden="true"
+              className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-verde-fundo bg-papel text-verde-fundo"
+              style={{ borderRadius: 10 }}
+            >
+              <Icone nome="loja" tamanho={22} />
+            </span>
+            <div className="min-w-0">
+              <p className="font-display uppercase text-verde-fundo">
+                {patrocinado.nome}
+              </p>
+              <p className="text-sm">
+                {patrocinado.descricao}{" "}
+                <span className="text-xs text-tinta/60">
+                  Comércio local que apoia o catálogo.
+                </span>
+              </p>
+            </div>
           </div>
           <a
-            href={`https://wa.me/${PATROCINADO_CIDADE.whatsapp}?text=${encodeURIComponent("Olá! Vi o anúncio no Trampo Certo.")}`}
-            className="botao-afunda shrink-0 border-2 border-verde-fundo bg-papel px-3 py-2 text-sm font-bold text-verde-fundo hover:bg-verde-claro"
+            href={`https://wa.me/${patrocinado.whatsapp}?text=${encodeURIComponent("Olá! Vi o anúncio no Trampo Certo.")}`}
+            className="botao-afunda w-full shrink-0 border-2 border-verde-fundo bg-papel px-3 py-2 text-center text-sm font-bold uppercase tracking-wide text-verde-fundo hover:bg-verde-claro sm:w-auto"
             style={{ borderRadius: 10 }}
           >
             Pedir orçamento
@@ -105,23 +117,86 @@ export default function Home() {
         </div>
       </section>
 
+      <Filtros />
+
       {/* A LISTA: o coracao da pagina, com conteudo real na primeira dobra */}
-      <section aria-label="Profissionais da cidade" className="mt-4">
-        <h2 className="flex items-baseline gap-2 border-b-2 border-verde-fundo pb-1 font-display text-xl uppercase text-verde-fundo">
+      <section aria-label="Profissionais da cidade" className="mt-6">
+        <h2 className="risca-forte flex flex-wrap items-baseline gap-x-2 pb-2 font-display text-2xl uppercase leading-none text-verde-fundo md:text-3xl">
           Profissionais de {CIDADE.nome}
-          <span className="text-base font-bold text-verde-trampo">
-            ({lista.length})
+          <span className="carimbo border-verde-trampo bg-verde-claro normal-case text-verde-trampo">
+            {lista.length} na cidade
           </span>
         </h2>
-        <p className="mt-1 text-sm text-tinta/70">
-          {lista.length} profissionais · {totalAvaliacoes} avaliações de
-          moradores · bairros atendidos: {BAIRROS.join(", ")}
-        </p>
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {lista.map((p) => (
-            <CardPrestador key={p.id} p={p} />
-          ))}
-        </div>
+        <ul className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+          <li className="flex items-center gap-2 border-2 border-cinza-linha bg-papel px-3 py-1.5" style={{ borderRadius: 10 }}>
+            <Icone nome="escudo" tamanho={16} className="shrink-0 text-verde-trampo" />
+            <span>
+              <strong className="font-display text-base">{verificados}</strong>{" "}
+              verificados
+            </span>
+          </li>
+          <li className="flex items-center gap-2 border-2 border-cinza-linha bg-papel px-3 py-1.5" style={{ borderRadius: 10 }}>
+            <Icone nome="estrela" tamanho={15} className="shrink-0 text-amarelo-aviso" />
+            <span>
+              <strong className="font-display text-base">{totalAvaliacoes}</strong>{" "}
+              avaliações de moradores
+            </span>
+          </li>
+          <li className="flex items-center gap-2 border-2 border-cinza-linha bg-papel px-3 py-1.5" style={{ borderRadius: 10 }}>
+            <span
+              aria-hidden="true"
+              className="inline-block h-2 w-2 shrink-0 rounded-full bg-verde-trampo"
+            />
+            <span>
+              <strong className="font-display text-base">{disponiveisHoje}</strong>{" "}
+              disponíveis hoje
+            </span>
+          </li>
+        </ul>
+        
+        {/* Verificados: a primeira vitrine, com selo de documento conferido */}
+        <h3 className="mt-4 flex flex-wrap items-baseline gap-x-2 font-display text-lg uppercase text-verde-fundo">
+          Perfis verificados
+          <span className="carimbo border-verde-trampo bg-verde-claro normal-case text-verde-trampo">
+            {verificados}
+          </span>
+        </h3>
+        {verificados === 0 ? (
+          <p className="mt-1 text-sm text-tinta/70">
+            Nenhum perfil verificado ainda: a equipe do Trampo Certo está
+            conferindo os primeiros documentos.
+          </p>
+        ) : (
+          <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {lista.filter((p) => p.verificado).map((p) => (
+              <CardPrestador key={p.id} p={p} />
+            ))}
+          </div>
+        )}
+
+        {/* Não verificados: publicados pelo dono, na hora, abaixo dos verificados */}
+        {naoVerificados > 0 && (
+          <>
+            <hr className="regra-tracejada my-6" />
+            <h3 className="font-display text-lg uppercase text-verde-fundo/70">
+              Perfis não verificados
+              <span className="carimbo border-amarelo-aviso bg-amarelo-aviso/15 normal-case text-verde-fundo">
+                {naoVerificados}
+              </span>
+            </h3>
+            <p className="mt-1 text-sm text-tinta/70">
+              Publicados pelos próprios profissionais, sem esperar aprovação —
+              ficam aqui, depois dos perfis já conferidos, até a equipe do
+              Trampo Certo verificar os documentos. Podem ser profissionais
+              excelentes: negocie com atenção e combine tudo por escrito.
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {lista.filter((p) => !p.verificado).map((p) => (
+                <CardPrestador key={p.id} p={p} />
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       <p className="regra-tracejada mt-8 pt-4 text-sm text-tinta/70">
@@ -129,47 +204,5 @@ export default function Home() {
         precisa de conta. Quem trabalha bem, aparece.
       </p>
     </main>
-  );
-}
-
-function BarraTopo() {
-  return (
-    <header className="pt-2">
-      <div className="flex items-center gap-3">
-        <Link href="/" className="shrink-0">
-          <span className="font-display text-lg leading-none text-verde-fundo">
-            Trampo
-            <br />
-            Certo
-            <span className="ml-1 inline-block -rotate-6 text-verde-trampo">✓</span>
-          </span>
-        </Link>
-        <div className="min-w-0 flex-1">
-          <Busca />
-        </div>
-        <a
-          href="/entrar"
-          className="botao-afunda shrink-0 border-2 border-verde-fundo px-3 py-2 text-sm font-bold text-verde-fundo hover:bg-verde-claro"
-          style={{ borderRadius: 10 }}
-        >
-          Conta
-        </a>
-      </div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            jsonLdPrestador({
-              nome: "Trampo Certo",
-              profissao: "Catálogo de serviços",
-              notaMedia: 4.8,
-              totalAvaliacoes: 146,
-              verificado: true,
-              bairros: BAIRROS,
-            })
-          ),
-        }}
-      />
-    </header>
   );
 }

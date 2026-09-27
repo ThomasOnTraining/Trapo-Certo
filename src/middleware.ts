@@ -1,47 +1,37 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /*
-  Middleware de seguranca (OWASP baseline):
-  - headers de seguranca em todas as respostas
-  - CSP que permite apenas o que usamos (Google Maps embed, fonts Google)
-  - rotas de API nunca cacheadas (Cache-Control private, no-store)
-  Nota: rate limit fica nas rotas (memoria volatel); em produção multi
-  instancia, migrar para a borda Cloudflare.
+  Refresh de sessao nas rotas privadas apenas (login, painel, auth).
+  Pagina publica nao passa por aqui: fica 100% estatica/cacheavel.
 */
 
-export function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+export async function middleware(request: NextRequest) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return NextResponse.next();
 
-  const csp = [
-    "default-src 'self'",
-    // Next.js injeta scripts inline de hydratacao; em producao trocar por nonces
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: https://*.supabase.co https://maps.gstatic.com https://maps.googleapis.com",
-    "frame-src https://maps.google.com",
-    "connect-src 'self' https://*.supabase.co",
-    "frame-ancestors 'self'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join("; ");
+  let resposta = NextResponse.next({ request });
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(lista) {
+        lista.forEach(({ name, value }) => request.cookies.set(name, value));
+        resposta = NextResponse.next({ request });
+        lista.forEach(({ name, value, options }) =>
+          resposta.cookies.set(name, value, options)
+        );
+      },
+    },
+  });
 
-  res.headers.set("Content-Security-Policy", csp);
-  res.headers.set("X-Content-Type-Options", "nosniff");
-  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.headers.set("X-Frame-Options", "SAMEORIGIN");
-  res.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()"
-  );
-
-  if (req.nextUrl.pathname.startsWith("/api/")) {
-    res.headers.set("Cache-Control", "private, no-store");
-  }
-
-  return res;
+  // Nada entre createServerClient e getUser: a chamada e o que aplica o refresh
+  await supabase.auth.getUser();
+  return resposta;
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/entrar/:path*", "/painel/:path*", "/auth/:path*"],
 };

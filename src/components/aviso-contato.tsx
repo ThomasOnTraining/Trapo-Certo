@@ -70,7 +70,12 @@ export function AvisoContato({
 
   return (
     <>
-      <button type="button" onClick={aoClicar} className={classe}>
+      <button
+        type="button"
+        onClick={aoClicar}
+        className={classe}
+        style={{ borderRadius: 10 }}
+      >
         <span className="inline-flex items-center justify-center gap-2">
           <Icone nome="chat" tamanho={compacto ? 16 : 20} />
           Falar no WhatsApp
@@ -87,7 +92,7 @@ export function AvisoContato({
         >
           <div
             className="sombra-papel w-full max-w-md border-2 border-verde-fundo bg-papel p-5"
-            style={{ borderRadius: 12 }}
+            style={{ borderRadius: 10 }}
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-display text-lg uppercase text-verde-fundo">
@@ -109,13 +114,15 @@ export function AvisoContato({
                 type="button"
                 onClick={() => continuar(true)}
                 className="botao-afunda border-2 border-verde-trampo bg-verde-trampo py-2.5 font-bold uppercase text-papel hover:bg-verde-trampo-forte"
+                style={{ borderRadius: 10 }}
               >
-                Bora falar com ele
+                Continuar para o WhatsApp
               </button>
               <button
                 type="button"
                 onClick={() => setAberto(false)}
                 className="botao-afunda border-2 border-cinza-linha py-2 font-semibold text-tinta hover:bg-verde-papel"
+                style={{ borderRadius: 10 }}
               >
                 Ainda não
               </button>

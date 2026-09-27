@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { EsquemaCliqueContato } from "@/lib/validate";
 import { checarLimite, chaveDoChamador } from "@/lib/rate-limit";
+import { supabaseService } from "@/lib/supabase/service";
+import { hashIp } from "@/lib/anon";
 
 export const runtime = "nodejs";
 
 /*
   Registro de clique de contato (WhatsApp). Sem dado pessoal do
-  visitante: apenas qual perfil foi contatado. Alimenta o painel do
-  prestador. IP só para rate limit, em memória.
+  visitante: apenas qual perfil foi contatado e o ip_hash (salt diário).
+  Sem service_role, segue em modo demo (só valida).
 */
 export async function POST(req: Request) {
   const limite = checarLimite(
@@ -34,6 +36,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ erro: "Dados inválidos" }, { status: 400 });
   }
 
-  // TODO (produção): INSERT INTO contact_clicks (provider_id, created_at)
+  const db = supabaseService();
+  if (!db) return new NextResponse(null, { status: 204 }); // modo demo
+
+  try {
+    await db.from("contact_clicks").insert({
+      provider_id: parse.data.prestadorId,
+      ip_hash: hashIp(req.headers.get("x-forwarded-for")),
+    });
+  } catch {
+    // métrica nunca pode bloquear o clique
+  }
   return new NextResponse(null, { status: 204 });
 }

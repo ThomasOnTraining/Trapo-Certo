@@ -34,7 +34,7 @@ export default function AvisoLegal() {
           <a href="/entrar" className="underline">
             Denuncie o perfil
           </a>{" "}
-          — removemos quem age de má-fé.
+          para removermos quem age de má-fé.
         </p>
       </div>
     </main>

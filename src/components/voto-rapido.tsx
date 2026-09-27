@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Icone } from "./icones";
+import { idSessao } from "@/lib/sessao";
 
 /** Voto rapido: recomendo ou nao, 1 clique, sem pagina nova. */
 export function VotoRapido({
@@ -24,14 +26,10 @@ export function VotoRapido({
         voto === "positivo" ? c.positivos + 1 : c.negativos + 1,
     }));
     try {
-      await fetch("/api/events", {
+      await fetch("/api/quick-vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome: "quick_vote",
-          props: { prestadorId, voto },
-          consent: true, // demo: substituir pelo consentimento real do cookie
-        }),
+        body: JSON.stringify({ prestadorId, voto, sessao: idSessao() }),
       });
     } catch {
       // voto nunca trava a pagina
@@ -45,29 +43,29 @@ export function VotoRapido({
         type="button"
         onClick={() => votar("positivo")}
         disabled={!!votou}
-        className={`botao-afunda border-2 px-2.5 py-1 text-sm font-semibold ${
+        className={`botao-afunda inline-flex items-center gap-1.5 border-2 px-2.5 py-1 text-sm font-semibold ${
           votou === "positivo"
-            ? "border-verde-trampo bg-verde-claro"
+            ? "border-verde-trampo bg-verde-claro text-verde-trampo"
             : "border-cinza-linha hover:border-verde-trampo"
         }`}
-        style={{ borderRadius: 8 }}
+        style={{ borderRadius: 10 }}
         aria-label="Recomendo"
       >
-        👍 {contagem.positivos}
+        <Icone nome="joinha" tamanho={15} /> {contagem.positivos}
       </button>
       <button
         type="button"
         onClick={() => votar("negativo")}
         disabled={!!votou}
-        className={`botao-afunda border-2 px-2.5 py-1 text-sm font-semibold ${
+        className={`botao-afunda inline-flex items-center gap-1.5 border-2 px-2.5 py-1 text-sm font-semibold ${
           votou === "negativo"
             ? "border-verde-fundo bg-verde-papel"
             : "border-cinza-linha hover:border-verde-fundo"
         }`}
-        style={{ borderRadius: 8 }}
+        style={{ borderRadius: 10 }}
         aria-label="Não recomendo"
       >
-        👎 {contagem.negativos}
+        <Icone nome="joinhaBaixo" tamanho={15} /> {contagem.negativos}
       </button>
     </div>
   );

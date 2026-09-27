@@ -53,10 +53,17 @@ export const EsquemaEvento = z.object({
     })
     .strict(),
   consent: z.boolean(),
+  sessao: z.string().min(8).max(64),
 });
 
 export const EsquemaCliqueContato = z.object({
   prestadorId: z.string().uuid(),
+});
+
+export const EsquemaVoto = z.object({
+  prestadorId: z.string().uuid(),
+  voto: z.enum(["positivo", "negativo"]),
+  sessao: z.string().min(8).max(64),
 });
 
 export const EsquemaBusca = z.object({

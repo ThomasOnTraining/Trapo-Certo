@@ -32,7 +32,7 @@ export type PrestadorDemo = {
   site?: string;
 };
 
-export const CIDADE = { nome: "Cidade Nova", slug: "cidade-nova", estado: "MG" };
+export const CIDADE = { nome: "Paranaguá", slug: "paranagua", estado: "PR" };
 
 export const CATEGORIAS = [
   { nome: "Elétrica", slug: "eletrica", icone: "bolt" },
@@ -53,7 +53,7 @@ export const BAIRROS = ["Centro", "Jardim Aurora", "Vila Rica", "São Pedro"];
 export const PATROCINADO_CIDADE = {
   nome: "Padaria Central",
   descricao: "Bolos e salgados para festas e eventos",
-  whatsapp: "5531999990020",
+  whatsapp: "5541999990020",
 };
 
 export function buscarPrestadorPorSlug(slug: string): PrestadorDemo | undefined {
@@ -73,7 +73,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Centro", "Jardim Aurora"],
     verificado: true,
     disponivelHoje: true,
-    whatsapp: "5531999990001",
+    whatsapp: "5541999990001",
     notaMedia: 4.8,
     totalAvaliacoes: 23,
     votosPositivos: 21,
@@ -84,7 +84,7 @@ export const PRESTADORES: PrestadorDemo[] = [
       { titulo: "Troca de tomadas e interruptores", precoDesde: 60 },
     ],
     anosRegiao: 8,
-    gmapsUrl: "https://maps.google.com/?q=eletricista+centro+cidade+nova",
+    gmapsUrl: "https://maps.google.com/?q=eletricista+centro+paranagua",
   },
   {
     id: "5f0b3c1e-2a4d-4f8b-9c1d-1a2b3c4d5e02",
@@ -98,7 +98,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Centro", "Vila Rica", "São Pedro"],
     verificado: true,
     disponivelHoje: false,
-    whatsapp: "5531999990002",
+    whatsapp: "5541999990002",
     notaMedia: 4.6,
     totalAvaliacoes: 11,
     votosPositivos: 10,
@@ -111,7 +111,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     anosRegiao: 12,
     horario: "Seg a Sáb, 8h às 18h",
     equipe: 3,
-    mapsQuery: "Elétrica Morada Nova Cidade Nova MG",
+    mapsQuery: "Elétrica Morada Nova Paranaguá PR",
   },
   {
     id: "5f0b3c1e-2a4d-4f8b-9c1d-1a2b3c4d5e03",
@@ -125,7 +125,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Jardim Aurora", "Centro"],
     verificado: false,
     disponivelHoje: true,
-    whatsapp: "5531999990003",
+    whatsapp: "5541999990003",
     notaMedia: 4.2,
     totalAvaliacoes: 7,
     votosPositivos: 6,
@@ -148,7 +148,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["São Pedro", "Vila Rica"],
     verificado: true,
     disponivelHoje: false,
-    whatsapp: "5531999990004",
+    whatsapp: "5541999990004",
     notaMedia: 4.9,
     totalAvaliacoes: 31,
     votosPositivos: 30,
@@ -171,7 +171,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Centro", "Jardim Aurora", "Vila Rica"],
     verificado: true,
     disponivelHoje: true,
-    whatsapp: "5531999990005",
+    whatsapp: "5541999990005",
     notaMedia: 4.5,
     totalAvaliacoes: 18,
     votosPositivos: 16,
@@ -183,7 +183,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     anosRegiao: 9,
     horario: "Seg a Sex, 7h às 17h",
     equipe: 4,
-    mapsQuery: "Reformas Araujo Cidade Nova MG",
+    mapsQuery: "Reformas Araujo Paranaguá PR",
   },
   {
     id: "5f0b3c1e-2a4d-4f8b-9c1d-1a2b3c4d5e06",
@@ -197,7 +197,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Vila Rica", "Centro"],
     verificado: true,
     disponivelHoje: true,
-    whatsapp: "5531999990006",
+    whatsapp: "5541999990006",
     notaMedia: 4.7,
     totalAvaliacoes: 15,
     votosPositivos: 14,
@@ -217,7 +217,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Centro", "São Pedro"],
     verificado: false,
     disponivelHoje: false,
-    whatsapp: "5531999990007",
+    whatsapp: "5541999990007",
     notaMedia: 4.4,
     totalAvaliacoes: 9,
     votosPositivos: 8,
@@ -237,7 +237,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Centro", "Jardim Aurora", "São Pedro"],
     verificado: true,
     disponivelHoje: true,
-    whatsapp: "5531999990008",
+    whatsapp: "5541999990008",
     notaMedia: 4.3,
     totalAvaliacoes: 12,
     votosPositivos: 10,
@@ -257,7 +257,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Centro"],
     verificado: true,
     disponivelHoje: false,
-    whatsapp: "5531999990009",
+    whatsapp: "5541999990009",
     notaMedia: 4.9,
     totalAvaliacoes: 6,
     votosPositivos: 6,
@@ -277,7 +277,7 @@ export const PRESTADORES: PrestadorDemo[] = [
     bairros: ["Centro", "Jardim Aurora"],
     verificado: true,
     disponivelHoje: true,
-    whatsapp: "5531999990010",
+    whatsapp: "5541999990010",
     notaMedia: 4.6,
     totalAvaliacoes: 14,
     votosPositivos: 13,

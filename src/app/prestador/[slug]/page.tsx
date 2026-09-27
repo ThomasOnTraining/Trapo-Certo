@@ -2,8 +2,14 @@ import { notFound } from "next/navigation";
 import { AvisoContato } from "@/components/aviso-contato";
 import { CarimboVerificado } from "@/components/card-prestador";
 import { Icone } from "@/components/icones";
+import { Voltar } from "@/components/voltar";
 import { VotoRapido } from "@/components/voto-rapido";
-import { CIDADE, buscarPrestadorPorSlug, PRESTADORES } from "@/lib/demo";
+import { CIDADE } from "@/lib/demo";
+import {
+  buscarPrestadorPorSlug,
+  listarAvaliacoes,
+  listarSlugs,
+} from "@/lib/catalogo";
 import {
   descricaoPrestador,
   jsonLdPrestador,
@@ -16,8 +22,11 @@ import {
   Anuncio so no fim: a conversao do prestador e prioridade maxima.
 */
 
-export function generateStaticParams() {
-  return PRESTADORES.map((p) => ({ slug: p.slug }));
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const slugs = await listarSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -26,7 +35,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const p = buscarPrestadorPorSlug(slug);
+  const p = await buscarPrestadorPorSlug(slug);
   if (!p) return { title: "Profissional não encontrado" };
   return {
     title: tituloPrestador(p.nome, p.profissao),
@@ -40,31 +49,16 @@ export async function generateMetadata({
   };
 }
 
-const AVALIACOES_DEMO = [
-  {
-    nome: "Marta G.",
-    nota: 5,
-    texto: "Chegou no mesmo dia e resolveu tudo. Preço justo, recomendo demais.",
-  },
-  {
-    nome: "Célio P.",
-    nota: 4,
-    texto: "Bom trabalho, demorou um pouco para voltar com o orçamento.",
-  },
-  {
-    nome: "Dona Neusa",
-    nota: 5,
-    texto: "Trabalha bem, arrumou até o que eu não tinha pedido. Gente fina.",
-  },
-];
-
 export default async function PaginaPrestador({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const p = buscarPrestadorPorSlug(slug);
+  const [p, avaliacoes] = await Promise.all([
+    buscarPrestadorPorSlug(slug),
+    listarAvaliacoes(slug),
+  ]);
   if (!p) notFound();
 
   return (
@@ -74,18 +68,12 @@ export default async function PaginaPrestador({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdPrestador(p)) }}
       />
 
-      <a
-        href="javascript:history.back()"
-        className="inline-flex items-center gap-1 text-sm font-semibold text-verde-fundo hover:text-verde-trampo"
-      >
-        <Icone nome="voltar" tamanho={16} />
-        Voltar para a lista
-      </a>
+      <Voltar />
 
       {/* Ficha: nome, selo, nota, bairros */}
-      <header className="mt-3 flex items-start gap-3">
+      <header className="risca-forte mt-3 flex items-start gap-3 pb-4">
         <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center border-2 border-verde-fundo bg-verde-claro font-display text-2xl text-verde-fundo"
+          className="flex h-16 w-16 shrink-0 items-center justify-center border-2 border-verde-fundo bg-verde-fundo font-display text-2xl text-papel"
           style={{ borderRadius: 10 }}
           aria-hidden="true"
         >
@@ -93,55 +81,75 @@ export default async function PaginaPrestador({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-2xl uppercase leading-none text-verde-fundo">
+            <h1 className="font-display text-3xl uppercase leading-none text-verde-fundo">
               {p.nome}
             </h1>
             <CarimboVerificado verificado={p.verificado} />
           </div>
-          <p className="mt-1 text-tinta/80">
-            {p.profissao} · {p.anosRegiao} anos na região · {CIDADE.nome}
+          <p className="mt-1.5 text-tinta/80">
+            {p.profissao}, {p.anosRegiao} anos em {CIDADE.nome}
           </p>
           <p className="mt-1 flex items-center gap-1">
             <Icone nome="estrela" tamanho={15} className="text-amarelo-aviso" />
-            <strong>{p.notaMedia.toFixed(1)}</strong>
+            <strong className="font-display text-lg">{p.notaMedia.toFixed(1)}</strong>
             <span className="text-sm text-tinta/70">
-              · {p.totalAvaliacoes} avaliações de moradores
+              em {p.totalAvaliacoes} avaliações de moradores
             </span>
           </p>
         </div>
       </header>
 
-      {/* Estado vivo: disponibilidade ou area de atendimento */}
-      <div className="mt-3 border-2 border-cinza-linha bg-verde-papel p-3" style={{ borderRadius: 10 }}>
-        {p.disponivelHoje ? (
-          <p className="flex items-center gap-2 font-semibold text-verde-trampo">
-            <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-verde-trampo" />
-            Disponível hoje
-          </p>
-        ) : (
-          <p className="text-sm text-tinta/80">
-            Atende: {p.bairros.join(", ")}
-            {p.horario ? ` · ${p.horario}` : ""}
-          </p>
-        )}
-      </div>
+      {/* Estado vivo: faixa de cartaz quando tem agenda hoje */}
+      {p.disponivelHoje ? (
+        <p
+          className="mt-4 flex items-center gap-2 border-2 border-verde-fundo bg-verde-trampo px-3 py-2 font-display uppercase tracking-wide text-papel"
+          style={{ borderRadius: 10 }}
+        >
+          <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-papel" />
+          Disponível hoje
+        </p>
+      ) : (
+        <p
+          className="mt-4 border-2 border-cinza-linha bg-papel px-3 py-2 text-sm text-tinta/80"
+          style={{ borderRadius: 10 }}
+        >
+          Atende {p.bairros.join(", ")}
+          {p.horario ? `, ${p.horario}` : ""}
+        </p>
+      )}
 
-      <p className="mt-3 text-tinta">{p.bio}</p>
+      {!p.verificado && (
+        <p
+          className="mt-3 flex items-start gap-2 border-2 border-dashed border-amarelo-aviso bg-amarelo-aviso/10 px-3 py-2 text-sm text-tinta/90"
+          style={{ borderRadius: 10 }}
+        >
+          <Icone
+            nome="relogio"
+            tamanho={16}
+            className="mt-0.5 shrink-0 text-verde-fundo"
+          />
+          <span>
+            <strong>Perfil não verificado.</strong> O dono publicou o perfil
+            direto, sem esperar a equipe, e o Trampo Certo ainda não conferiu os
+            documentos. Combine orçamento por escrito e nunca pague tudo
+            adiantado.
+          </span>
+        </p>
+      )}
 
-      {/* Servicos e precos: transparencia rara entre concorrentes */}
-      <section aria-label="Serviços e preços" className="regra-tracejada mt-5 pt-3">
-        <h2 className="font-display text-lg uppercase text-verde-fundo">
+      <p className="mt-4 max-w-[65ch] leading-relaxed text-tinta">{p.bio}</p>
+
+      {/* Servicos e precos: quadro de feira, com pontilhado e preco em tinta */}
+      <section aria-label="Serviços e preços" className="mt-6">
+        <h2 className="risca-forte pb-2 font-display text-xl uppercase leading-none text-verde-fundo">
           Serviços e preços
         </h2>
         <ul className="mt-2">
           {p.servicos.map((s) => (
-            <li
-              key={s.titulo}
-              className="flex items-baseline justify-between border-b border-cinza-linha py-2 last:border-b-0"
-            >
+            <li key={s.titulo} className="linha-preco py-2.5">
               <span>{s.titulo}</span>
-              <span className="font-semibold text-verde-fundo">
-                {s.precoDesde != null ? `a partir de R$${s.precoDesde}` : "orçamento"}
+              <span className="shrink-0 font-display text-lg text-verde-fundo">
+                {s.precoDesde != null ? `R$${s.precoDesde}+` : "sob orçamento"}
               </span>
             </li>
           ))}
@@ -149,9 +157,9 @@ export default async function PaginaPrestador({
       </section>
 
       {/* Avaliacoes: conteudo unico e indexavel, com voto rapido */}
-      <section aria-label="Avaliações" className="regra-tracejada mt-5 pt-3">
+      <section aria-label="Avaliações" className="regra-tracejada mt-6 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-display text-lg uppercase text-verde-fundo">
+          <h2 className="font-display text-xl uppercase leading-none text-verde-fundo">
             Avaliações dos moradores ({p.totalAvaliacoes})
           </h2>
           <VotoRapido
@@ -160,9 +168,13 @@ export default async function PaginaPrestador({
             negativos={p.votosNegativos}
           />
         </div>
-        <ul className="mt-2 space-y-3">
-          {AVALIACOES_DEMO.map((a) => (
-            <li key={a.nome} className="border-l-2 border-verde-claro pl-3">
+        <ul className="mt-3 space-y-3">
+          {avaliacoes.map((a) => (
+            <li
+              key={a.nome}
+              className="border-l-4 border-verde-trampo bg-papel py-2 pl-3 pr-2"
+              style={{ borderRadius: 3 }}
+            >
               <p className="text-sm">
                 <strong>{a.nome}</strong>
                 <span className="ml-2 text-amarelo-aviso">
@@ -196,8 +208,8 @@ export default async function PaginaPrestador({
 
       {/* Empresa: mapa (embed gratuito) e rota */}
       {p.tipo === "empresa" && (
-        <section aria-label="Onde fica" className="regra-tracejada mt-5 pt-3">
-          <h2 className="font-display text-lg uppercase text-verde-fundo">
+        <section aria-label="Onde fica" className="regra-tracejada mt-6 pt-4">
+          <h2 className="risca-forte pb-2 font-display text-xl uppercase leading-none text-verde-fundo">
             Onde está
           </h2>
           <div className="mt-2 overflow-hidden border-2 border-verde-fundo" style={{ borderRadius: 10 }}>
@@ -227,7 +239,7 @@ export default async function PaginaPrestador({
       )}
 
       {/* Denuncia: moderacao comunitaria */}
-      <p className="regra-tracejada mt-6 pt-3 text-xs text-tinta/60">
+      <p className="regra-tracejada mt-8 pt-4 text-xs text-tinta/60">
         Algo errado neste perfil?{" "}
         <a href="/entrar" className="underline">
           Denuncie
@@ -238,9 +250,9 @@ export default async function PaginaPrestador({
 
       {/* Publicidade: sempre DEPOIS da decisao */}
       <div className="regra-tracejada mt-4 pt-3 text-center text-xs text-tinta/50">
-        Publicidade dos comércios da cidade ·{" "}
+        Publicidade dos comércios da cidade.{" "}
         <a href="/entrar" className="underline">
-          anuncie aqui
+          Anuncie aqui
         </a>
       </div>
 

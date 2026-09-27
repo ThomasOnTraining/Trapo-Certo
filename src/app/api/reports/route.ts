@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { EsquemaDenuncia, textoPuro } from "@/lib/validate";
 import { checarLimite, chaveDoChamador } from "@/lib/rate-limit";
+import { supabaseService } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 
 /*
   Denuncia de perfil. Anonima, texto puro sanitizado, rate limit
-  apertado (5/hora) porque e rota escrita por anonimo.
+  apertado (5/hora) porque e rota escrita por anonimo. Sem service_role
+  segue em modo demo (só valida).
 */
 export async function POST(req: Request) {
   const limite = checarLimite(
@@ -41,6 +43,17 @@ export async function POST(req: Request) {
       : null,
   };
 
-  // TODO (produção): INSERT INTO reports (...) e notificar admin
+  const db = supabaseService();
+  if (!db) return NextResponse.json({ ok: true }); // modo demo
+
+  try {
+    await db.from("reports").insert({
+      provider_id: denuncia.prestadorId,
+      motivo: denuncia.motivo,
+      detalhes: denuncia.detalhes,
+    });
+  } catch {
+    // denuncia nunca trava na cara do morador; segue como recebida
+  }
   return NextResponse.json({ ok: true });
 }

@@ -17,8 +17,12 @@ exemplo em `src/lib/demo.ts`). Para conectar o Supabase:
 1. Crie um projeto no Supabase e copie `.env.example` para `.env.local`,
    preenchendo URL, anon key e service role key.
 2. Rode o conteúdo de `supabase/schema.sql` no SQL Editor do projeto
-   (cria tabelas, RLS, trigger de nota e os buckets de storage).
-3. No painel de Auth: habilite Google OAuth (e Magic Link), com
+   (cria tabelas, RLS, triggers e os buckets de storage).
+3. (Opcional) Rode `supabase/seed.sql` no SQL Editor para popular Paranaguá
+   com dados de demonstração: 10 prestadores, avaliações, votos, 1 anúncio
+   e sinônimos de busca. Cria também as contas demo (senha `demo1234`) —
+   úteis quando o Auth for ligado na fase 2.
+4. No painel de Auth: habilite Google OAuth (e Magic Link), com
    redirecionamento para `/api/auth/callback` (fluxo PKCE, tokens só em
    cookie httpOnly, nunca em URL).
 

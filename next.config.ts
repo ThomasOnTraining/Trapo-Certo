@@ -1,7 +1,10 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ha outro package-lock em C:\Users\thome; trava a raiz neste projeto
+  outputFileTracingRoot: path.join(__dirname),
   images: {
     // Uploads de prestadores ficarão no Supabase Storage.
     remotePatterns: [{ protocol: "https", hostname: "*.supabase.co" }],

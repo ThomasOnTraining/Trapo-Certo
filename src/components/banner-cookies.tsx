@@ -63,12 +63,14 @@ export function BannerCookies() {
               <button
                 onClick={() => decidir({ metricas: true, anuncios: true })}
                 className="botao-afunda border-2 border-verde-trampo bg-verde-trampo px-3 py-1.5 text-sm font-bold uppercase text-papel hover:bg-verde-trampo-forte"
+                style={{ borderRadius: 10 }}
               >
                 Aceitar tudo
               </button>
               <button
                 onClick={() => decidir({ metricas: false, anuncios: false })}
                 className="botao-afunda border-2 border-cinza-linha px-3 py-1.5 text-sm font-semibold hover:bg-verde-claro"
+                style={{ borderRadius: 10 }}
               >
                 Só essenciais
               </button>
@@ -123,6 +125,7 @@ export function BannerCookies() {
               <button
                 onClick={() => decidir({ metricas, anuncios })}
                 className="botao-afunda border-2 border-verde-trampo bg-verde-trampo px-3 py-1.5 font-bold uppercase text-papel hover:bg-verde-trampo-forte"
+                style={{ borderRadius: 10 }}
               >
                 Salvar
               </button>
